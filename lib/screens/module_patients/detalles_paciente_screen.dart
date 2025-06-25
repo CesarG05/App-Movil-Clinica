@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../actions/paciente_actions.dart';
-import '../models/paciente.dart';
-import '../services/paciente_service.dart';
+import '../../actions/paciente_actions.dart';
+import '../../models/paciente.dart';
+import '../../services/paciente_service.dart';
 
 class PacienteDetalleScreen extends StatefulWidget {
   final Paciente paciente;
@@ -58,18 +58,27 @@ class PacienteInfoCard extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _infoTile(Icons.person, 'Nombre completo',
-              '${paciente.primerNombre} '
-                  '${paciente.segundoNombre ?? ''} '
-                  '${paciente.primerApellido} '
-                  '${paciente.segundoApellido}'),
-          _infoTile(Icons.calendar_today, 'Fecha de nacimiento',
-              DateFormat('yyyy-MM-dd').format(paciente.fechaNacimiento)),
+          _infoTile(
+            Icons.person,
+            'Nombre completo',
+            '${paciente.primerNombre} '
+                '${paciente.segundoNombre ?? ''} '
+                '${paciente.primerApellido} '
+                '${paciente.segundoApellido}',
+          ),
+          _infoTile(
+            Icons.calendar_today,
+            'Fecha de nacimiento',
+            DateFormat('yyyy-MM-dd').format(paciente.fechaNacimiento),
+          ),
           _infoTile(Icons.wc, 'Sexo', paciente.sexo.tipoSexo),
           _infoTile(Icons.location_on, 'Dirección', paciente.direccion),
           _infoTile(Icons.phone, 'Teléfono', paciente.telefono),
-          _infoTile(Icons.email, 'Correo electrónico',
-              paciente.correoElectronico ?? 'No proporcionado'),
+          _infoTile(
+            Icons.email,
+            'Correo electrónico',
+            paciente.correoElectronico ?? 'No proporcionado',
+          ),
           _infoTile(
             paciente.activo == true ? Icons.check_circle : Icons.cancel,
             'Estado',
@@ -81,8 +90,12 @@ class PacienteInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _infoTile(IconData icon, String title, String subtitle,
-      {Color? color}) {
+  Widget _infoTile(
+    IconData icon,
+    String title,
+    String subtitle, {
+    Color? color,
+  }) {
     return ListTile(
       leading: Icon(icon),
 
@@ -123,8 +136,8 @@ class BotonesPaciente extends StatelessWidget {
 
             if (resultado == true) {
               try {
-                final pacienteActualizado =
-                await PacienteService().fetchPacientePorId(paciente.id);
+                final pacienteActualizado = await PacienteService()
+                    .fetchPacientePorId(paciente.id);
                 onActualizar(pacienteActualizado);
               } catch (e) {
                 if (!context.mounted) return;
@@ -140,9 +153,7 @@ class BotonesPaciente extends StatelessWidget {
           style: _botonStyle(color: Colors.teal),
         ),
         ElevatedButton.icon(
-          onPressed: () {
-
-          },
+          onPressed: () {},
           icon: const Icon(Icons.medical_services),
           label: const Text('Historial Clínico'),
           style: _botonStyle(color: Colors.teal),
@@ -173,4 +184,3 @@ class BotonesPaciente extends StatelessWidget {
     );
   }
 }
-

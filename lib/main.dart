@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
-import '../screens/index.dart';
-import '../models/paciente.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:demo_app/screens/index.dart';
+import 'package:demo_app/models/paciente.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('es_MX', null);
+  Intl.defaultLocale = 'es_MX';
+  runApp(AppClinica());
 }
 
-class MyApp extends StatelessWidget {
-  MyApp({super.key});
+class AppClinica extends StatelessWidget {
+  AppClinica({super.key});
 
   final _routes = {
     '/home': (context) => const HomeScreen(),
@@ -28,14 +33,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Clínica App',
-      theme: ThemeData(
-        //colorSchemeSeed: Colors.teal,
-        primarySwatch: Colors.teal,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.teal,
-          foregroundColor: Colors.white,
-        ),
-      ),
+      theme: ThemeData(fontFamily: 'Urbanist'),
       initialRoute: '/home',
       routes: _routes,
       onGenerateRoute: (settings) {
@@ -46,5 +44,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-

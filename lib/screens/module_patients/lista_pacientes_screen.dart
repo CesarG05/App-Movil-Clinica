@@ -1,9 +1,10 @@
+import 'package:demo_app/screens/scaffold_base/scaffold_base.dart';
+import 'package:demo_app/widgets/animation_fa_button.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../actions/paciente_actions.dart';
-import '../services/paciente_service.dart';
-import '../models/paciente.dart';
-import '../widgets/menu_drawer.dart';
+import '../../actions/paciente_actions.dart';
+import '../../services/paciente_service.dart';
+import '../../models/paciente.dart';
 
 class ListaPacientesScreen extends StatefulWidget {
   const ListaPacientesScreen({super.key});
@@ -18,10 +19,15 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
   final int _pageSize = 6;
   bool _hasMore = true;
 
+  int selectBtn = 1;
+  bool isGoingDown = false;
+
   //Metodo para cargar a los pacientes
   Future<void> _loadPacientes() async {
-    final futurePacientes = PacienteService()
-        .fetchPacientes(pageNumber: _currentPage, pageSize: _pageSize);
+    final futurePacientes = PacienteService().fetchPacientes(
+      pageNumber: _currentPage,
+      pageSize: _pageSize,
+    );
 
     setState(() {
       _pacientes = futurePacientes;
@@ -35,7 +41,6 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
     });
   }
 
-
   @override
   void initState() {
     super.initState();
@@ -44,22 +49,60 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pacientes')),
-      body: SafeArea(
-        child: FutureBuilder<List<Paciente>>(
-          future: _pacientes,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return _buildPacienteView(snapshot.data!);
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+    return ScaffoldBase(
+      selectedIndex: selectBtn,
+      onNavTap: (int index) {
+        setState(() {
+          selectBtn = index;
+        });
+      },
+      appBar: AppBar(
+        title: const Text('Pacientes'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (onScrollNotification) {
+          if (onScrollNotification is ScrollUpdateNotification) {
+            if (onScrollNotification.scrollDelta! <= 0.0) {
+              if (isGoingDown) setState(() => isGoingDown = false);
+            } else {
+              if (!isGoingDown) setState(() => isGoingDown = true);
             }
-            return const Center(child: CircularProgressIndicator());
+          }
+          return false;
+        },
+        child: SafeArea(
+          child: FutureBuilder<List<Paciente>>(
+            future: _pacientes,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return _buildPacienteView(snapshot.data!);
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              return const Center(child: CircularProgressIndicator());
+            },
+          ),
+        ),
+      ),
+
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 60),
+        child: CustomAnimationFAButton(
+          isExpand: isGoingDown,
+          onTap: () async {
+            final resultado = await Navigator.pushNamed(
+              context,
+              '/agregarPaciente',
+            );
+            if (resultado == true) {
+              await _loadPacientes();
+            }
           },
         ),
       ),
-      drawer: buildDrawer(context),
     );
   }
 
@@ -67,7 +110,7 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
   Widget _buildPacienteView(List<Paciente> pacientes) {
     return Column(
       children: [
-        _buildAddButton(),
+        _buildSearchBar(),
         Expanded(child: _buildPacienteGrid(pacientes)),
         const SizedBox(height: 8),
         _buildPaginationControls(),
@@ -75,28 +118,20 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
     );
   }
 
-  //  Widget Botón Nuevo Paciente
-  Widget _buildAddButton() {
+  //  Widget Barra filtar
+  Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: ElevatedButton.icon(
-          onPressed: () async {
-            final resultado = await Navigator.pushNamed(context, '/agregarPaciente');
-            if (resultado == true) {
-              await _loadPacientes();
-            }
-          },
-          icon: const Icon(Icons.person_add),
-          label: const Text('Nuevo paciente'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.all(12.0),
+      child: TextField(
+        onChanged: (value) {},
+        decoration: InputDecoration(
+          hintText: 'Buscar paciente...',
+          prefixIcon: Icon(Icons.search),
+          filled: true,
+          fillColor: Colors.grey[100],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.0),
+            borderSide: BorderSide.none,
           ),
         ),
       ),
@@ -138,27 +173,29 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
             break;
         }
       },
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        const PopupMenuItem<String>(
-          value: 'detalles',
-          child: Text('Ver ficha del paciente'),
-        ),
-        const PopupMenuItem<String>(
-          value: 'historial',
-          child: Text('Ver historial clínico'),
-        ),
-        PopupMenuItem<String>(
-          value: 'inactivo',
-          child: Text(
-              paciente.activo == true
-                  ? 'Inactivar paciente'
-                  : 'Activar paciente'),
-        ),
-        const PopupMenuItem<String>(
-          value: 'eliminar',
-          child: Text('Eliminar'),
-        ),
-      ],
+      itemBuilder:
+          (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: 'detalles',
+              child: Text('Ver ficha del paciente'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'historial',
+              child: Text('Ver historial clínico'),
+            ),
+            PopupMenuItem<String>(
+              value: 'inactivo',
+              child: Text(
+                paciente.activo == true
+                    ? 'Inactivar paciente'
+                    : 'Activar paciente',
+              ),
+            ),
+            const PopupMenuItem<String>(
+              value: 'eliminar',
+              child: Text('Eliminar'),
+            ),
+          ],
     );
   }
 
@@ -166,9 +203,7 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
   Widget _buildPacienteCard(Paciente paciente) {
     return Card(
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -186,7 +221,7 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
                       },
                       child: Text(
                         '${paciente.primerApellido} '
-                            '${paciente.primerNombre}',
+                        '${paciente.primerNombre}',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18.0,
@@ -198,7 +233,8 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
                     Text(
                       paciente.activo == true ? 'Activo' : 'No Activo',
                       style: TextStyle(
-                        color: paciente.activo == true ? Colors.green : Colors.red,
+                        color:
+                            paciente.activo == true ? Colors.green : Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -228,23 +264,24 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
               ),
             ),
             RichText(
-                text: TextSpan(
-                    style: const TextStyle(color: Colors.black),
-                    children: [
-                      const TextSpan(
-                        text: 'Fecha Nacimiento: ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.0,
-                        ),
-                      ),
-                      TextSpan(
-                        text: DateFormat('yyyy-MM-dd')
-                          .format(paciente.fechaNacimiento),
-                        style: TextStyle(fontSize: 16.0)
-                      )
-                    ]
-                )
+              text: TextSpan(
+                style: const TextStyle(color: Colors.black),
+                children: [
+                  const TextSpan(
+                    text: 'Fecha Nacimiento: ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.0,
+                    ),
+                  ),
+                  TextSpan(
+                    text: DateFormat(
+                      'yyyy-MM-dd',
+                    ).format(paciente.fechaNacimiento),
+                    style: TextStyle(fontSize: 16.0),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -260,26 +297,28 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           ElevatedButton(
-            onPressed: _currentPage > 1
-                ? () {
-              setState(() {
-                _currentPage--;
-                _loadPacientes();
-              });
-            }
-                : null,
+            onPressed:
+                _currentPage > 1
+                    ? () {
+                      setState(() {
+                        _currentPage--;
+                        _loadPacientes();
+                      });
+                    }
+                    : null,
             child: const Text('Anterior'),
           ),
           Text('Página $_currentPage'),
           ElevatedButton(
-            onPressed: _hasMore
-                ? () {
-              setState(() {
-                _currentPage++;
-                _loadPacientes();
-              });
-            }
-                : null,
+            onPressed:
+                _hasMore
+                    ? () {
+                      setState(() {
+                        _currentPage++;
+                        _loadPacientes();
+                      });
+                    }
+                    : null,
             child: const Text('Siguiente'),
           ),
         ],
@@ -288,11 +327,7 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
   }
 
   Future<void> _verDetallesPaciente(Paciente paciente) async {
-    await Navigator.pushNamed(
-      context,
-      '/detallePaciente',
-      arguments: paciente,
-    );
+    await Navigator.pushNamed(context, '/detallePaciente', arguments: paciente);
     await _loadPacientes();
   }
 
@@ -312,8 +347,3 @@ class ListaPacientesScreenState extends State<ListaPacientesScreen> {
     );
   }
 }
-
-
-
-
-

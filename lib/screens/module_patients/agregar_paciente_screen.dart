@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/paciente_service.dart';
-import '../widgets/paciente_form.dart';
+import '../../services/paciente_service.dart';
+import '../../widgets/paciente_form.dart';
 
 class AgregarPacienteScreen extends StatelessWidget {
   const AgregarPacienteScreen({super.key});
